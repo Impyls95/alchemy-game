@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Алхимия — головоломка о смешивании элементов. Соединяй стихии и открывай новые элементы.">
+  <title>Алхимия — смешивай элементы</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚗️</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-glyph" aria-hidden="true">⚗️</span>
+      <div class="brand-text">
+        <h1 data-i18n="title">Алхимия</h1>
+        <p class="tagline" data-i18n="tagline">смешивай элементы — открывай мир</p>
+      </div>
+    </div>
+
+    <div class="progress" role="status">
+      <div class="progress-label">
+        <span data-i18n="discovered">Открыто</span>:
+        <strong id="counter">0 / 0</strong>
+        <span class="era-chip" id="eraChip"></span>
+      </div>
+      <div class="progress-track" data-i18n-title="progress" title="Прогресс открытий">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <nav class="actions" aria-label="Управление игрой">
+      <button id="btnHint" class="btn btn-accent" type="button">
+        <span aria-hidden="true">💡</span><span class="btn-label" data-i18n="hint">Подсказка</span>
+      </button>
+      <button id="btnClear" class="btn" type="button" data-i18n-title="clearField" title="Очистить поле">
+        <span aria-hidden="true">🧹</span><span class="btn-label" data-i18n="clearField">Очистить поле</span>
+      </button>
+      <button id="btnHelp" class="btn btn-icon" type="button" data-i18n-title="help" title="Как играть" aria-label="Как играть">❓</button>
+      <button id="btnSound" class="btn btn-icon" type="button" data-i18n-title="soundOn" title="Звук включён" aria-label="Звук">🔊</button>
+      <button id="btnTheme" class="btn btn-icon" type="button" data-i18n-title="theme" title="Тема" aria-label="Тема">🌙</button>
+      <button id="btnLang" class="btn btn-icon btn-lang" type="button" data-i18n="langBtn" data-i18n-title="langTitle" title="Switch to English" aria-label="Language">EN</button>
+      <button id="btnReset" class="btn btn-icon btn-danger" type="button" data-i18n-title="reset" title="Сбросить прогресс" aria-label="Сбросить прогресс">🗑️</button>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="field-wrap" aria-label="Игровое поле">
+      <div id="field" class="field">
+        <p class="field-empty" id="fieldEmpty" data-i18n="fieldEmpty">Перетащи элементы из палитры сюда</p>
+        <div class="field-rune" aria-hidden="true">☿</div>
+      </div>
+    </section>
+
+    <aside class="palette" id="palette" aria-label="Палитра элементов">
+      <div class="palette-head">
+        <h2><span aria-hidden="true">🧪</span> <span data-i18n="palette">Элементы</span> <span class="palette-count" id="paletteCount"></span></h2>
+        <input id="search" class="search" type="search" data-i18n-placeholder="search" placeholder="Поиск элемента…" autocomplete="off">
+      </div>
+      <div class="palette-grid" id="paletteGrid"></div>
+      <p class="palette-empty" id="paletteEmpty" hidden data-i18n="nothingFound">Ничего не найдено</p>
+      <div class="palette-drop-hint" id="paletteDropHint" data-i18n="dropToRemove">Отпусти, чтобы убрать с поля</div>
+    </aside>
+  </main>
+
+  <div class="discovery" id="discovery" hidden>
+    <div class="discovery-card">
+      <div class="discovery-icon" id="discoveryIcon"></div>
+      <div class="discovery-text">
+        <span class="discovery-label" data-i18n="newElement">Новый элемент</span>
+        <strong id="discoveryName"></strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <div class="modal-scrim" id="welcomeModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+      <div class="modal-glyph" aria-hidden="true">⚗️</div>
+      <h2 id="welcomeTitle" data-i18n="welcomeTitle">Добро пожаловать в Алхимию!</h2>
+      <p data-i18n="welcomeText">Перетащи один элемент на другой, чтобы создать новый.</p>
+      <ul class="tutorial">
+        <li><span class="tutorial-icon" aria-hidden="true">🖐️</span><span data-i18n="welcomeStep1">Бери элементы из палитры и перетаскивай на поле</span></li>
+        <li><span class="tutorial-icon" aria-hidden="true">💧🔥</span><span data-i18n="welcomeStep2">Соединяй плитки друг с другом — удачная пара создаёт новый элемент</span></li>
+        <li><span class="tutorial-icon" aria-hidden="true">💾</span><span data-i18n="welcomeStep3">Прогресс сохраняется автоматически. Удачи, алхимик!</span></li>
+      </ul>
+      <button class="btn btn-accent btn-big" id="btnStart" type="button" data-i18n="start">Начать смешивать</button>
+    </div>
+  </div>
+
+  <div class="modal-scrim" id="resetModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+      <div class="modal-glyph" aria-hidden="true">🗑️</div>
+      <h2 id="resetTitle" data-i18n="resetTitle">Сбросить прогресс?</h2>
+      <p data-i18n="resetText">Все открытые элементы и поле будут очищены. Это действие нельзя отменить.</p>
+      <div class="modal-buttons">
+        <button class="btn" id="btnResetCancel" type="button" data-i18n="cancel">Отмена</button>
+        <button class="btn btn-danger-solid" id="btnResetConfirm" type="button" data-i18n="confirmReset">Сбросить</button>
+      </div>
+    </div>
+  </div>
+
+  <noscript><p class="noscript">Для игры «Алхимия» нужен включённый JavaScript. / This game requires JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
