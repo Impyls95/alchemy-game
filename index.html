@@ -39,10 +39,12 @@
       <button id="btnClear" class="btn" type="button" data-i18n-title="clearField" title="Очистить поле">
         <span aria-hidden="true">🧹</span><span class="btn-label" data-i18n="clearField">Очистить поле</span>
       </button>
+      <button id="btnBook" class="btn btn-icon" type="button" data-i18n-title="book" title="Книга рецептов" aria-label="Книга рецептов">📖</button>
       <button id="btnHelp" class="btn btn-icon" type="button" data-i18n-title="help" title="Как играть" aria-label="Как играть">❓</button>
       <button id="btnSound" class="btn btn-icon" type="button" data-i18n-title="soundOn" title="Звук включён" aria-label="Звук">🔊</button>
       <button id="btnTheme" class="btn btn-icon" type="button" data-i18n-title="theme" title="Тема" aria-label="Тема">🌙</button>
       <button id="btnLang" class="btn btn-icon btn-lang" type="button" data-i18n="langBtn" data-i18n-title="langTitle" title="Switch to English" aria-label="Language">EN</button>
+      <button id="btnShare" class="btn btn-icon" type="button" data-i18n-title="share" title="Поделиться" aria-label="Поделиться">📤</button>
       <button id="btnReset" class="btn btn-icon btn-danger" type="button" data-i18n-title="reset" title="Сбросить прогресс" aria-label="Сбросить прогресс">🗑️</button>
     </nav>
   </header>
@@ -57,7 +59,7 @@
 
     <aside class="palette" id="palette" aria-label="Палитра элементов">
       <div class="palette-head">
-        <h2><span aria-hidden="true">🧪</span> <span data-i18n="palette">Элементы</span> <span class="palette-count" id="paletteCount"></span></h2>
+        <h2><span aria-hidden="true">🧪</span> <span data-i18n="palette">Элементы</span> <span class="palette-count" id="paletteCount"></span><button id="btnSort" class="sort-btn" type="button" title="Сортировка">📜 все</button></h2>
         <input id="search" class="search" type="search" data-i18n-placeholder="search" placeholder="Поиск элемента…" autocomplete="off">
       </div>
       <div class="palette-grid" id="paletteGrid"></div>
@@ -101,6 +103,33 @@
         <button class="btn" id="btnResetCancel" type="button" data-i18n="cancel">Отмена</button>
         <button class="btn btn-danger-solid" id="btnResetConfirm" type="button" data-i18n="confirmReset">Сбросить</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-scrim" id="bookModal" hidden>
+    <div class="modal modal-book" role="dialog" aria-modal="true" aria-labelledby="bookTitle">
+      <div class="modal-glyph" aria-hidden="true">📖</div>
+      <h2 id="bookTitle" data-i18n="book">Книга рецептов</h2>
+      <p data-i18n="bookHint">Здесь только уже открытые сочетания — остальные открывай экспериментами.</p>
+      <input id="bookSearch" class="search" type="search" data-i18n-placeholder="bookSearch" placeholder="Поиск по книге…" autocomplete="off">
+      <div class="book-list" id="bookList"></div>
+      <p class="palette-empty" id="bookEmpty" hidden data-i18n="bookEmpty">Пока нет открытых сочетаний — смешивай элементы!</p>
+      <div class="modal-buttons">
+        <button class="btn" id="btnBookClose" type="button" data-i18n="close">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-scrim" id="gestureModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="gestureTitle">
+      <div class="modal-glyph" aria-hidden="true">🖐️</div>
+      <h2 id="gestureTitle" data-i18n="gesturesTitle">Подсказка по жестам</h2>
+      <ul class="tutorial">
+        <li><span class="tutorial-icon" aria-hidden="true">👆</span><span data-i18n="gesture1">Тап по элементу палитры — добавить его на поле</span></li>
+        <li><span class="tutorial-icon" aria-hidden="true">🖐️</span><span data-i18n="gesture2">Удержание на элементе + ведение — перетащить</span></li>
+        <li><span class="tutorial-icon" aria-hidden="true">🧹</span><span data-i18n="gesture3">Свайп по палитре — прокрутка. Перетащи плитку с поля в палитру — убрать её</span></li>
+      </ul>
+      <button class="btn btn-accent btn-big" id="btnGesturesOk" type="button" data-i18n="gesturesOk">Понятно</button>
     </div>
   </div>
 

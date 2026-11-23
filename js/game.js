@@ -166,6 +166,15 @@ export class Field {
     }
   }
 
+  // Полный откат поля к снимку (undo слияния): текущие плитки заменяются сохранёнными.
+  restoreSnapshot(saved) {
+    this.clear();
+    for (const t of saved) {
+      if (!this.book.elements.has(t.el)) continue;
+      this.spawn(t.el, t.x ?? 20, t.y ?? 20, { animate: false });
+    }
+  }
+
   refreshNames() {
     for (const tile of this.tiles.values()) {
       tile.node.querySelector('.tile-name').textContent = getName(tile.el, getLang());
@@ -211,6 +220,7 @@ export class Field {
       overPalette: false
     };
     node.classList.add('dragging');
+    this.preDrag = this.serialize(); // снимок до перемещения: undo возвращает плитки туда, где их взяли
     this.hooks.sound?.pickup();
   }
 
@@ -331,6 +341,7 @@ export class Field {
       return;
     }
 
+    const snapshot = this.preDrag ?? this.serialize(); // для undo: поле до взятия плитки
     const s = this.tileSize;
     const midX = (a.x + b.x) / 2;
     const midY = (a.y + b.y) / 2;
@@ -340,6 +351,7 @@ export class Field {
     this.hooks.sound?.pop();
     this.spawn(result, midX, midY);
     this.hooks.onDiscover(result);
+    this.hooks.onMerged?.(result, snapshot);
   }
 
   /* ---------- эффекты ---------- */

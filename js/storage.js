@@ -5,7 +5,7 @@ const DEFAULTS = () => ({
   discovered: [],        // ids открытых элементов
   tiles: [],             // { uid, el, x, y } — позиции плиток на поле (px)
   fresh: [],             // элементы с непогашенным бейджем NEW
-  settings: { theme: 'dark', lang: 'ru', sound: true },
+  settings: { theme: 'dark', lang: 'ru', sound: true, sort: 'default', gesturesSeen: false },
   hintAt: 0,             // timestamp последней подсказки (кулдаун)
   welcomed: false
 });

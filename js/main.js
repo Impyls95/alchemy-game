@@ -29,11 +29,24 @@ async function boot() {
   const paletteCount = $('paletteCount');
   const toastsEl = $('toasts');
 
+  // Undo слияния: снимок поля делается перед слиянием; тост живёт,
+  // пока не произошло ни одного изменения поля после слияния.
+  let fieldVersion = 0;
+  let undoToast = null;
+  let undoSnapshot = null;
+
+  function onFieldChange() {
+    fieldVersion++;
+    if (undoToast) { undoToast.remove(); undoToast = null; undoSnapshot = null; }
+    persist();
+  }
+
   const field = new Field(fieldEl, book, {
     paletteEl,
     sound,
-    onChange: persist,
-    onDiscover: handleDiscover
+    onChange: onFieldChange,
+    onDiscover: handleDiscover,
+    onMerged: handleMerged
   });
 
   /* ---------- сохранение ---------- */
@@ -57,23 +70,56 @@ async function boot() {
     setTimeout(() => node.remove(), life + 500);
   }
 
+  // Тост с кнопкой-действием (используется для undo слияния).
+  function actionToast(msg, actionLabel, onAction, life = 6000) {
+    const node = document.createElement('div');
+    node.className = 'toast action';
+    node.style.setProperty('--life', `${life}ms`);
+    const text = document.createElement('span');
+    text.textContent = msg;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-btn';
+    btn.textContent = actionLabel;
+    btn.addEventListener('click', () => {
+      node.remove();
+      onAction();
+    });
+    node.append(text, btn);
+    node.addEventListener('animationend', (e) => {
+      if (e.animationName === 'toast-out') node.remove();
+    });
+    toastsEl.appendChild(node);
+    setTimeout(() => node.remove(), life + 500);
+    return node;
+  }
+
   /* ---------- счётчик и прогресс ---------- */
+  function eraIndex() {
+    const f = discovered.size / book.total;
+    return f >= 0.9 ? 4 : f >= 0.65 ? 3 : f >= 0.4 ? 2 : f >= 0.15 ? 1 : 0;
+  }
+
   function updateCounter() {
     counterEl.textContent = `${discovered.size} / ${book.total}`;
     progressFill.style.width = `${(discovered.size / book.total) * 100}%`;
     paletteCount.textContent = `${discovered.size}`;
-    const f = discovered.size / book.total;
-    const era = f >= 0.9 ? 4 : f >= 0.65 ? 3 : f >= 0.4 ? 2 : f >= 0.15 ? 1 : 0;
-    $('eraChip').textContent = t(`era${era}`);
+    $('eraChip').textContent = t(`era${eraIndex()}`);
   }
 
   /* ---------- палитра ---------- */
   function renderPalette() {
     const query = searchEl.value.trim().toLowerCase();
     const lang = getLang();
+    const ids = [...discovered];
+    if (state.settings.sort === 'alpha') {
+      ids.sort((a, b) => getName(a, lang).localeCompare(getName(b, lang), undefined, { sensitivity: 'base' }));
+    } else if (state.settings.sort === 'recent') {
+      ids.reverse(); // новинки сверху
+    }
     const frag = document.createDocumentFragment();
     let shown = 0;
-    for (const id of discovered) {
+    for (const id of ids) {
       const ruName = id.toLowerCase();
       const enName = (getMeta(id).en ?? '').toLowerCase();
       if (query && !ruName.includes(query) && !enName.includes(query)) continue;
@@ -142,6 +188,23 @@ async function boot() {
       field.burst(fieldEl.clientWidth / 2, fieldEl.clientHeight / 2);
     }
     if (discovered.size === book.total) toast(t('allDone'), 'hint', 6000);
+  }
+
+  /* ---------- undo последнего слияния ---------- */
+  function handleMerged(result, snapshot) {
+    undoSnapshot = snapshot;
+    if (undoToast) { undoToast.remove(); undoToast = null; }
+    undoToast = actionToast(
+      `${t('merged')}: ${getMeta(result).icon} ${getName(result, getLang())}`,
+      t('undo'),
+      () => {
+        const snap = undoSnapshot;
+        undoToast = null;
+        undoSnapshot = null;
+        field.restoreSnapshot(snap); // открытый элемент остаётся открытым — откатываются только плитки
+        sound.remove();
+      }
+    );
   }
 
   /* ---------- перетаскивание из палитры на поле ----------
@@ -290,6 +353,54 @@ async function boot() {
 
   setInterval(refreshHintButton, 1000);
 
+  /* ---------- шаринг прогресса ---------- */
+  $('btnShare').addEventListener('click', async () => {
+    const recent = [...discovered].slice(-3).reverse()
+      .map((id) => `${getMeta(id).icon} ${getName(id, getLang())}`)
+      .join(', ');
+    const text = t('shareText', {
+      n: discovered.size,
+      m: book.total,
+      era: t(`era${eraIndex()}`),
+      recent,
+      url: location.origin + location.pathname
+    });
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: t('title'), text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast(t('shareCopied'), 'hint', 2500);
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // пользователь отменил системный диалог
+      toast(text, '', 6000);
+    }
+  });
+
+  /* ---------- сортировка палитры ---------- */
+  const SORTS = [
+    { id: 'default', icon: '📜', key: 'sortAll' },
+    { id: 'recent', icon: '🆕', key: 'sortNew' },
+    { id: 'alpha', icon: '🔤', key: 'sortAz' }
+  ];
+  const btnSort = $('btnSort');
+
+  function applySortBtn() {
+    const s = SORTS.find((x) => x.id === state.settings.sort) ?? SORTS[0];
+    btnSort.textContent = `${s.icon} ${t(s.key)}`;
+    btnSort.title = `${t('sort')}: ${t(s.key)}`;
+  }
+
+  btnSort.addEventListener('click', () => {
+    const i = SORTS.findIndex((x) => x.id === state.settings.sort);
+    state.settings.sort = SORTS[(i + 1) % SORTS.length].id;
+    applySortBtn();
+    renderPalette();
+    persist();
+    sound.pickup();
+  });
+
   /* ---------- тема / язык / звук ---------- */
   const btnTheme = $('btnTheme');
   const btnSound = $('btnSound');
@@ -312,6 +423,8 @@ async function boot() {
     renderPalette();
     field.refreshNames();
     refreshHintButton();
+    applySortBtn();
+    if (!bookModal.hidden) renderBook();
     applySound();
   }
 
@@ -337,23 +450,101 @@ async function boot() {
   /* ---------- модалки ---------- */
   const welcomeModal = $('welcomeModal');
   const resetModal = $('resetModal');
+  const bookModal = $('bookModal');
+  const gestureModal = $('gestureModal');
+
+  const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+  function maybeShowGestures() {
+    if (isTouch && !state.settings.gesturesSeen) gestureModal.hidden = false;
+  }
 
   $('btnStart').addEventListener('click', () => {
     welcomeModal.hidden = true;
     state.welcomed = true;
     persist();
     sound.pop();
+    maybeShowGestures();
   });
   $('btnHelp').addEventListener('click', () => { welcomeModal.hidden = false; });
   $('btnReset').addEventListener('click', () => { resetModal.hidden = false; });
   $('btnResetCancel').addEventListener('click', () => { resetModal.hidden = true; });
-  for (const scrim of [welcomeModal, resetModal]) {
+  $('btnGesturesOk').addEventListener('click', () => {
+    gestureModal.hidden = true;
+    state.settings.gesturesSeen = true;
+    persist();
+    sound.pop();
+  });
+
+  /* ---------- книга рецептов ---------- */
+  const bookSearchEl = $('bookSearch');
+  const bookListEl = $('bookList');
+
+  function renderBook() {
+    const query = bookSearchEl.value.trim().toLowerCase();
+    const lang = getLang();
+    const rows = [];
+    for (const r of book.recipes) {
+      if (!(discovered.has(r.a) && discovered.has(r.b) && discovered.has(r.result))) continue;
+      const na = getName(r.a, lang);
+      const nb = getName(r.b, lang);
+      const nr = getName(r.result, lang);
+      if (query && ![r.a, r.b, r.result, na, nb, nr].some((s) => s.toLowerCase().includes(query))) continue;
+      rows.push([r, na, nb, nr]);
+    }
+    rows.sort((x, y) => x[3].localeCompare(y[3], lang === 'ru' ? 'ru' : 'en'));
+    const frag = document.createDocumentFragment();
+    for (const [r, na, nb, nr] of rows) {
+      const row = document.createElement('div');
+      row.className = 'book-row';
+      const part = (id, name, res = false) => {
+        const ic = document.createElement('span');
+        ic.className = 'b-ic';
+        ic.textContent = getMeta(id).icon;
+        const nm = document.createElement('span');
+        nm.textContent = name;
+        if (res) nm.className = 'b-res';
+        return [ic, nm];
+      };
+      const plus = document.createElement('span');
+      plus.className = 'b-plus';
+      plus.textContent = '+';
+      const arrow = document.createElement('span');
+      arrow.className = 'b-plus';
+      arrow.textContent = '→';
+      row.append(...part(r.a, na), plus, ...part(r.b, nb), arrow, ...part(r.result, nr, true));
+      frag.appendChild(row);
+    }
+    bookListEl.replaceChildren(frag);
+    $('bookEmpty').hidden = rows.length > 0;
+  }
+
+  $('btnBook').addEventListener('click', () => {
+    bookSearchEl.value = '';
+    renderBook();
+    bookModal.hidden = false;
+    bookSearchEl.focus();
+  });
+  $('btnBookClose').addEventListener('click', () => { bookModal.hidden = true; });
+  bookSearchEl.addEventListener('input', renderBook);
+
+  for (const scrim of [resetModal, bookModal, gestureModal]) {
     scrim.addEventListener('click', (e) => {
-      if (e.target === scrim && scrim === resetModal) scrim.hidden = true;
+      if (e.target !== scrim) return;
+      scrim.hidden = true;
+      if (scrim === gestureModal) { state.settings.gesturesSeen = true; persist(); }
     });
   }
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') resetModal.hidden = true;
+    if (e.key !== 'Escape') return;
+    if (!bookModal.hidden) { bookModal.hidden = true; return; }
+    if (!gestureModal.hidden) {
+      gestureModal.hidden = true;
+      state.settings.gesturesSeen = true;
+      persist();
+      return;
+    }
+    resetModal.hidden = true;
   });
 
   $('btnResetConfirm').addEventListener('click', () => {
@@ -424,7 +615,11 @@ async function boot() {
   refreshHintButton();
   spawnMotes();
 
-  requestAnimationFrame(() => {
+  // Раскладка поля после первого кадра; в фоновой вкладке rAF стоит — подстраховка таймером.
+  let fieldLaidOut = false;
+  function layoutField() {
+    if (fieldLaidOut) return;
+    fieldLaidOut = true;
     if (state.tiles.length) {
       field.restore(state.tiles);
       field.clampAll();
@@ -432,8 +627,11 @@ async function boot() {
       seedBaseTiles();
     }
     if (!state.welcomed) welcomeModal.hidden = false;
+    else maybeShowGestures();
     persist();
-  });
+  }
+  requestAnimationFrame(layoutField);
+  setTimeout(layoutField, 300);
 
   window.addEventListener('resize', () => field.clampAll());
   window.addEventListener('beforeunload', () => {

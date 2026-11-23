@@ -814,3 +814,81 @@ body {
   .mote, .sigil, .tile::before, .tile-icon { animation: none; }
   .mote { opacity: .25; }
 }
+
+/* ---------- книга рецептов ---------- */
+.modal-book { width: min(94vw, 520px); display: flex; flex-direction: column; }
+.modal-book .search { flex: 0 0 auto; margin-bottom: 12px; }
+
+.book-list {
+  flex: 1 1 auto;
+  min-height: 100px;
+  max-height: 44dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+  margin-bottom: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--thumb) var(--track);
+}
+
+.book-list::-webkit-scrollbar { width: 8px; }
+.book-list::-webkit-scrollbar-track { background: var(--track); border-radius: 99px; }
+.book-list::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 99px; border: 2px solid transparent; background-clip: content-box; }
+.book-list::-webkit-scrollbar-thumb:hover { background: var(--thumb-hover); background-clip: content-box; }
+
+.book-row {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.book-row .b-ic { font-size: 15px; margin-right: 2px; }
+.book-row .b-plus { color: var(--text-dim); padding: 0 5px; }
+.book-row .b-res { font-weight: 800; color: var(--gold); }
+
+/* ---------- сортировка палитры ---------- */
+.sort-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--track);
+  color: var(--text-dim);
+  font: 700 11px var(--font);
+  padding: 4px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: color .2s, border-color .2s;
+}
+
+.sort-btn:hover { color: var(--gold); border-color: hsla(var(--hue-gold), 80%, 60%, .5); }
+
+/* ---------- тост с действием (undo) ---------- */
+.toast.action {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+.toast-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  border: 1px solid hsla(var(--hue-gold), 90%, 60%, .6);
+  background: transparent;
+  color: var(--gold);
+  font: 700 12.5px var(--font);
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.toast-btn:hover { background: hsla(var(--hue-gold), 90%, 60%, .15); }
