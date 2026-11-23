@@ -723,6 +723,57 @@ body {
   box-shadow: 0 0 24px hsla(var(--hue-gold), 90%, 60%, .25), var(--shadow);
 }
 
+/* ---------- достижения ---------- */
+.ach-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.ach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  opacity: .5;
+  filter: grayscale(.9);
+}
+
+.ach.done {
+  opacity: 1;
+  filter: none;
+  border-color: hsla(var(--hue-gold), 90%, 60%, .55);
+  box-shadow: 0 0 14px hsla(var(--hue-gold), 90%, 60%, .12);
+}
+
+.ach-icon { font-size: 22px; line-height: 1; }
+.ach-text { display: grid; gap: 2px; text-align: left; min-width: 0; }
+.ach-text strong { font-size: 13.5px; }
+.ach-text span { font-size: 12px; color: var(--text-dim); }
+
+/* ---------- перенос прогресса ---------- */
+.save-transfer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border-strong);
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.save-transfer h3 { margin: 0; font-size: 15px; }
+.save-transfer p { margin: 0; font-size: 12.5px; color: var(--text-dim); }
+
+.save-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.save-row .search { flex: 1 1 150px; min-width: 130px; }
+
 @keyframes toast-in { from { transform: translateY(16px); opacity: 0; } }
 @keyframes toast-out { to { transform: translateY(10px); opacity: 0; } }
 

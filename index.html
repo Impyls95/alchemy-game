@@ -25,6 +25,7 @@
       <div class="progress-label">
         <span data-i18n="discovered">Открыто</span>:
         <strong id="counter">0 / 0</strong>
+        <span class="era-chip" id="rankChip"></span>
         <span class="era-chip" id="eraChip"></span>
       </div>
       <div class="progress-track" data-i18n-title="progress" title="Прогресс открытий">
@@ -40,6 +41,7 @@
         <span aria-hidden="true">🧹</span><span class="btn-label" data-i18n="clearField">Очистить поле</span>
       </button>
       <button id="btnBook" class="btn btn-icon" type="button" data-i18n-title="book" title="Книга рецептов" aria-label="Книга рецептов">📖</button>
+      <button id="btnAch" class="btn btn-icon" type="button" data-i18n-title="achTitle" title="Достижения" aria-label="Достижения">🏆</button>
       <button id="btnHelp" class="btn btn-icon" type="button" data-i18n-title="help" title="Как играть" aria-label="Как играть">❓</button>
       <button id="btnSound" class="btn btn-icon" type="button" data-i18n-title="soundOn" title="Звук включён" aria-label="Звук">🔊</button>
       <button id="btnTheme" class="btn btn-icon" type="button" data-i18n-title="theme" title="Тема" aria-label="Тема">🌙</button>
@@ -91,6 +93,15 @@
         <li><span class="tutorial-icon" aria-hidden="true">💾</span><span data-i18n="welcomeStep3">Прогресс сохраняется автоматически. Удачи, алхимик!</span></li>
       </ul>
       <button class="btn btn-accent btn-big" id="btnStart" type="button" data-i18n="start">Начать смешивать</button>
+      <div class="save-transfer">
+        <h3 data-i18n="saveTitle">Перенос прогресса</h3>
+        <p data-i18n="saveHint">Скопируйте код сохранения на одном устройстве и вставьте его на другом — прогресс переносится без регистрации.</p>
+        <div class="save-row">
+          <button class="btn" id="btnExportSave" type="button" data-i18n="exportSave">Скопировать код</button>
+          <input id="saveCode" class="search" type="text" placeholder="…" autocomplete="off" spellcheck="false">
+          <button class="btn" id="btnImportSave" type="button" data-i18n="importSave">Загрузить</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -116,6 +127,18 @@
       <p class="palette-empty" id="bookEmpty" hidden data-i18n="bookEmpty">Пока нет открытых сочетаний — смешивай элементы!</p>
       <div class="modal-buttons">
         <button class="btn" id="btnBookClose" type="button" data-i18n="close">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-scrim" id="achModal" hidden>
+    <div class="modal modal-book" role="dialog" aria-modal="true" aria-labelledby="achTitle">
+      <div class="modal-glyph" aria-hidden="true">🏆</div>
+      <h2 id="achTitle" data-i18n="achTitle">Достижения</h2>
+      <p data-i18n="achHint">Маленькие победы великого алхимика.</p>
+      <div class="ach-list" id="achList"></div>
+      <div class="modal-buttons">
+        <button class="btn" id="btnAchClose" type="button" data-i18n="close">Закрыть</button>
       </div>
     </div>
   </div>

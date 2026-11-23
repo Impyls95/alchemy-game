@@ -107,11 +107,18 @@ async function boot() {
     return eraIndexFor(discovered.size);
   }
 
+  // Ранги алхимика: пороги сознательно не совпадают с эрами — праздники разнесены.
+  function rankIndexFor(n) {
+    const f = n / book.total;
+    return f >= 0.8 ? 4 : f >= 0.55 ? 3 : f >= 0.3 ? 2 : f >= 0.1 ? 1 : 0;
+  }
+
   function updateCounter() {
     counterEl.textContent = `${discovered.size} / ${book.total}`;
     progressFill.style.width = `${(discovered.size / book.total) * 100}%`;
     paletteCount.textContent = `${discovered.size}`;
     $('eraChip').textContent = t(`era${eraIndex()}`);
+    $('rankChip').textContent = t(`rank${rankIndexFor(discovered.size)}`);
   }
 
   /* ---------- палитра ---------- */
@@ -164,12 +171,41 @@ async function boot() {
     persist();
   }
 
+  /* ---------- достижения ----------
+     Условия вычисляются на лету из состояния; achSeen гасит повторные
+     поздравления в текущей сессии (в т.ч. при загрузке со старым прогрессом). */
+  const FOOD = ['Хлеб', 'Суши', 'Сыр', 'Мёд', 'Яичница', 'Молоко', 'Пшеница', 'Рис'];
+  const ACHIEVEMENTS = [
+    { icon: '🧪', key: 'ach1', check: () => (state.crafts ?? 0) >= 1 },
+    { icon: '⚗️', key: 'ach2', check: () => discovered.has('Феникс') },
+    { icon: '🦖', key: 'ach3', check: () => discovered.has('Динозавр') },
+    { icon: '🚀', key: 'ach4', check: () => discovered.has('Космонавт') },
+    { icon: '🧑‍🍳', key: 'ach5', check: () => FOOD.filter((el) => discovered.has(el)).length >= 5 },
+    { icon: '🔭', key: 'ach6', check: () => ['Телескоп', 'Галактика', 'Созвездие'].every((el) => discovered.has(el)) },
+    { icon: '💡', key: 'ach7', check: () => (state.crafts ?? 0) >= 25 },
+    { icon: '🏆', key: 'ach8', check: () => discovered.size === book.total }
+  ];
+  const achSeen = new Set(ACHIEVEMENTS.filter((a) => a.check()).map((a) => a.key));
+
+  function checkAchievements() {
+    let changed = false;
+    for (const a of ACHIEVEMENTS) {
+      if (achSeen.has(a.key) || !a.check()) continue;
+      achSeen.add(a.key);
+      changed = true;
+      toast(t('achToast', { name: t(`${a.key}t`) }), 'milestone', 5000);
+      sound.milestone();
+    }
+    if (changed) persist();
+  }
+
   /* ---------- открытие нового элемента ---------- */
   const BIG_MILESTONES = new Set([10, 25, 50, 75, 100]);
   let discoveryTimer = null;
   function handleDiscover(id) {
     if (discovered.has(id)) return;
     const prevEra = eraIndexFor(discovered.size);
+    const prevRank = rankIndexFor(discovered.size);
     discovered.add(id);
     fresh.add(id);
     updateCounter();
@@ -210,10 +246,19 @@ async function boot() {
     if (n < book.total && eraIndexFor(n) > prevEra) {
       toast(t('eraUp', { era: t(`era${eraIndexFor(n)}`) }), 'milestone', 6000);
     }
+    // Повышение ранга алхимика.
+    if (n < book.total && rankIndexFor(n) > prevRank) {
+      toast(t('rankUp', { rank: t(`rank${rankIndexFor(n)}`) }), 'milestone', 6000);
+      sound.milestone();
+    }
+    checkAchievements();
   }
 
   /* ---------- undo последнего слияния ---------- */
   function handleMerged(result, snapshot) {
+    state.crafts = (state.crafts ?? 0) + 1;
+    persist();
+    checkAchievements();
     undoSnapshot = snapshot;
     if (undoToast) { undoToast.remove(); undoToast = null; }
     undoToast = actionToast(
@@ -444,12 +489,18 @@ async function boot() {
   function applyLang() {
     setLang(state.settings.lang);
     document.title = `${t('title')} — ${t('tagline')}`;
+    updateCounter(); // чипы эры и ранга в шапке тоже переводятся
     renderPalette();
     field.refreshNames();
     refreshHintButton();
     applySortBtn();
     if (!bookModal.hidden) renderBook();
+    if (!achModalHidden()) renderAch();
     applySound();
+  }
+
+  function achModalHidden() {
+    return $('achModal').hidden;
   }
 
   btnTheme.addEventListener('click', () => {
@@ -490,7 +541,61 @@ async function boot() {
     sound.pop();
     maybeShowGestures();
   });
-  $('btnHelp').addEventListener('click', () => { welcomeModal.hidden = false; });
+  /* ---------- перенос прогресса (экспорт/импорт кода сохранения) ---------- */
+  const saveCodeEl = $('saveCode');
+  const encodeSave = (data) => btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const decodeSave = (code) => JSON.parse(decodeURIComponent(escape(atob(code))));
+
+  $('btnHelp').addEventListener('click', () => { welcomeModal.hidden = false; saveCodeEl.value = ''; });
+
+  $('btnExportSave').addEventListener('click', async () => {
+    const code = encodeSave(state);
+    saveCodeEl.value = code;
+    try {
+      await navigator.clipboard.writeText(code);
+      toast(t('shareCopied'), 'hint', 2500);
+    } catch {
+      // Буфер недоступен — код остаётся в поле, выделяем для ручного копирования.
+      saveCodeEl.focus();
+      saveCodeEl.select();
+    }
+  });
+
+  $('btnImportSave').addEventListener('click', () => {
+    const raw = saveCodeEl.value.trim();
+    if (!raw) return;
+    let data = null;
+    try { data = decodeSave(raw); } catch { /* битый base64/JSON */ }
+    if (!data || typeof data !== 'object' || !Array.isArray(data.discovered)) {
+      toast(t('importBad'), 'error', 3500);
+      return;
+    }
+    // Настройки (тема, язык, звук) остаются локальными — переносим только прогресс.
+    discovered.clear();
+    for (const id of data.discovered) {
+      if (typeof id === 'string' && book.elements.has(id)) discovered.add(id);
+    }
+    for (const id of book.base) discovered.add(id);
+    state.discovered = [...discovered];
+    fresh.clear();
+    state.fresh = [];
+    if (Number.isFinite(data.crafts)) state.crafts = Math.max(0, Math.floor(data.crafts));
+    field.clear();
+    field.restore(Array.isArray(data.tiles)
+      ? data.tiles.filter((tl) => tl && typeof tl.el === 'string' && book.elements.has(tl.el))
+      : []);
+    field.clampAll();
+    field.syncEmptyState();
+    achSeen.clear();
+    for (const a of ACHIEVEMENTS) if (a.check()) achSeen.add(a.key);
+    persist();
+    welcomeModal.hidden = true;
+    updateCounter();
+    renderPalette();
+    sound.milestone();
+    toast(t('importDone'), 'milestone', 4000);
+  });
+
   $('btnReset').addEventListener('click', () => { resetModal.hidden = false; });
   $('btnResetCancel').addEventListener('click', () => { resetModal.hidden = true; });
   $('btnGesturesOk').addEventListener('click', () => {
@@ -552,7 +657,42 @@ async function boot() {
   $('btnBookClose').addEventListener('click', () => { bookModal.hidden = true; });
   bookSearchEl.addEventListener('input', renderBook);
 
-  for (const scrim of [resetModal, bookModal, gestureModal]) {
+  /* ---------- панель достижений ---------- */
+  const achModal = $('achModal');
+  const achListEl = $('achList');
+
+  function renderAch() {
+    const frag = document.createDocumentFragment();
+    let done = 0;
+    for (const a of ACHIEVEMENTS) {
+      const ok = a.check();
+      if (ok) done++;
+      const item = document.createElement('div');
+      item.className = `ach${ok ? ' done' : ''}`;
+      const icon = document.createElement('span');
+      icon.className = 'ach-icon';
+      icon.textContent = a.icon;
+      const text = document.createElement('span');
+      text.className = 'ach-text';
+      const name = document.createElement('strong');
+      name.textContent = t(`${a.key}t`);
+      const desc = document.createElement('span');
+      desc.textContent = t(`${a.key}d`);
+      text.append(name, desc);
+      item.append(icon, text);
+      frag.appendChild(item);
+    }
+    achListEl.replaceChildren(frag);
+    $('achTitle').textContent = `${t('achTitle')} — ${done}/${ACHIEVEMENTS.length}`;
+  }
+
+  $('btnAch').addEventListener('click', () => {
+    renderAch();
+    achModal.hidden = false;
+  });
+  $('btnAchClose').addEventListener('click', () => { achModal.hidden = true; });
+
+  for (const scrim of [resetModal, bookModal, achModal, gestureModal]) {
     scrim.addEventListener('click', (e) => {
       if (e.target !== scrim) return;
       scrim.hidden = true;
@@ -562,6 +702,7 @@ async function boot() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (!bookModal.hidden) { bookModal.hidden = true; return; }
+    if (!achModal.hidden) { achModal.hidden = true; return; }
     if (!gestureModal.hidden) {
       gestureModal.hidden = true;
       state.settings.gesturesSeen = true;
@@ -580,6 +721,7 @@ async function boot() {
     state.discovered = [...discovered];
     state.fresh = [];
     state.hintAt = 0;
+    state.crafts = 0;
     state.welcomed = true;
     searchEl.value = '';
     resetModal.hidden = true;

@@ -8,6 +8,7 @@ const DEFAULTS = () => ({
   fresh: [],             // элементы с непогашенным бейджем NEW
   settings: { theme: 'dark', lang: 'ru', sound: true, sort: 'default', gesturesSeen: false },
   hintAt: 0,             // timestamp последней подсказки (кулдаун)
+  crafts: 0,             // всего успешных смешиваний (для достижений)
   welcomed: false
 });
 
@@ -20,6 +21,7 @@ export function normalize(data) {
     discovered: Array.isArray(data.discovered) ? data.discovered.filter((x) => typeof x === 'string') : [],
     tiles: Array.isArray(data.tiles) ? data.tiles.filter((t) => t && typeof t.el === 'string') : [],
     fresh: Array.isArray(data.fresh) ? data.fresh : [],
+    crafts: Number.isFinite(data.crafts) ? Math.max(0, Math.floor(data.crafts)) : 0,
     settings: { ...DEFAULTS().settings, ...(data.settings && typeof data.settings === 'object' ? data.settings : {}) }
   };
 }
