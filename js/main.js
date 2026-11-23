@@ -282,6 +282,7 @@ async function boot() {
   const MYTH = ['Легенда', 'Магия', 'Зелье', 'Призрак', 'Лампа', 'Джинн', 'Ведьма', 'Дракон', 'Русалка', 'Единорог', 'Рыцарь', 'Замок', 'Принцесса'];
   const MUSIC = ['Звук', 'Барабан', 'Гитара', 'Пианино', 'Колокол', 'Наушники', 'Рок', 'Оркестр', 'Дискотека'];
   const LEGENDS = ['Философский камень', 'Эликсир жизни', 'Перо Феникса'];
+  const NEWYEAR = ['Зима', 'Мороз', 'Ёлка', 'Гирлянда', 'Подарок', 'Мандарин', 'Праздник', 'Салют', 'Дед Мороз', 'Олень'];
   const ACHIEVEMENTS = [
     { icon: '🧪', key: 'ach1', check: () => (state.crafts ?? 0) >= 1 },
     { icon: '⚗️', key: 'ach2', check: () => discovered.has('Феникс') },
@@ -293,7 +294,8 @@ async function boot() {
     { icon: '🏆', key: 'ach8', check: () => discovered.size === book.total },
     { icon: '🐉', key: 'ach9', check: () => MYTH.every((el) => discovered.has(el)) },
     { icon: '🎸', key: 'ach10', check: () => MUSIC.every((el) => discovered.has(el)) },
-    { icon: '🌟', key: 'ach11', check: () => LEGENDS.every((el) => discovered.has(el)) }
+    { icon: '🌟', key: 'ach11', check: () => LEGENDS.every((el) => discovered.has(el)) },
+    { icon: '🎄', key: 'ach12', check: () => NEWYEAR.every((el) => discovered.has(el)) }
   ];
   const achSeen = new Set(ACHIEVEMENTS.filter((a) => a.check()).map((a) => a.key));
 

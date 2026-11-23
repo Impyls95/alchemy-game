@@ -167,6 +167,18 @@ export const ELEMENTS = {
   'Оркестр':      { en: 'Orchestra',    icon: '🎼' },
   'Дискотека':    { en: 'Disco',        icon: '🪩' },
 
+  // Новогоднее: сезонная ветка к праздникам — от первого снега до Деда Мороза.
+  'Зима':         { en: 'Winter',       icon: '🌨️' },
+  'Мороз':        { en: 'Frost',        icon: '🥶' },
+  'Ёлка':         { en: 'Christmas tree', icon: '🎄' },
+  'Гирлянда':     { en: 'Fairy lights', icon: '🎉' },
+  'Подарок':      { en: 'Present',      icon: '🎁' },
+  'Мандарин':     { en: 'Tangerine',    icon: '🍊' },
+  'Праздник':     { en: 'Celebration',  icon: '🥳' },
+  'Салют':        { en: 'Fireworks',    icon: '🎇' },
+  'Дед Мороз':    { en: 'Santa',        icon: '🎅' },
+  'Олень':        { en: 'Reindeer',     icon: '🦌' },
+
   // Легендарные: вершины длинных цепочек — с золотым оформлением и фанфарами.
   'Философский камень': { en: "Philosopher's stone", icon: '💮', legendary: true },
   'Эликсир жизни':      { en: 'Elixir of life',      icon: '⚗️', legendary: true },
