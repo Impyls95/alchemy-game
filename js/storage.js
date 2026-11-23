@@ -9,6 +9,8 @@ const DEFAULTS = () => ({
   settings: { theme: 'dark', lang: 'ru', sound: true, sort: 'default', gesturesSeen: false },
   hintAt: 0,             // timestamp последней подсказки (кулдаун)
   crafts: 0,             // всего успешных смешиваний (для достижений)
+  lastDaily: '',         // день (YYYY-MM-DD), когда последний раз засчитан рецепт дня
+  dailyStreak: 0,        // серия дней с выполненным рецептом дня
   welcomed: false
 });
 
@@ -22,6 +24,8 @@ export function normalize(data) {
     tiles: Array.isArray(data.tiles) ? data.tiles.filter((t) => t && typeof t.el === 'string') : [],
     fresh: Array.isArray(data.fresh) ? data.fresh : [],
     crafts: Number.isFinite(data.crafts) ? Math.max(0, Math.floor(data.crafts)) : 0,
+    lastDaily: typeof data.lastDaily === 'string' ? data.lastDaily : '',
+    dailyStreak: Number.isFinite(data.dailyStreak) ? Math.max(0, Math.floor(data.dailyStreak)) : 0,
     settings: { ...DEFAULTS().settings, ...(data.settings && typeof data.settings === 'object' ? data.settings : {}) }
   };
 }

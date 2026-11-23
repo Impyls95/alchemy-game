@@ -10,6 +10,7 @@
   --hue-teal: 168;
   --hue-magenta: 322;
   --hue-ember: 18;
+  --hue-fresh: 142;
 
   --tile-size: 86px;
   --header-h: 68px;
@@ -308,6 +309,20 @@ body {
   text-transform: uppercase;
   vertical-align: middle;
   transition: color .3s, border-color .3s, background .3s;
+}
+
+/* чип ежедневного вызова: кликабельный, зелёный когда день выполнен */
+.daily-chip {
+  cursor: pointer;
+  text-transform: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.daily-chip[data-done="1"] {
+  border-color: hsla(var(--hue-fresh), 70%, 55%, .55);
+  background: hsla(var(--hue-fresh), 70%, 50%, .14);
+  color: var(--success);
 }
 
 .field-empty {

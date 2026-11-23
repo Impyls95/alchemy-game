@@ -113,12 +113,59 @@ async function boot() {
     return f >= 0.8 ? 4 : f >= 0.55 ? 3 : f >= 0.3 ? 2 : f >= 0.1 ? 1 : 0;
   }
 
+  /* ---------- ежедневный вызов ---------- */
+  // Цель дня одинакова у всех игроков: детерминированный хэш даты → элемент.
+  // Базы исключаем (у всех открыты), секреты — чтобы не раскрывать пасхалки.
+  let dailyPool = null;
+  function dailyTarget(dateStr) {
+    if (!dailyPool) {
+      dailyPool = [...book.elements].filter((id) => !book.base.includes(id) && !getMeta(id).secret).sort();
+    }
+    let h = 0;
+    for (let i = 0; i < dateStr.length; i++) h = (h * 31 + dateStr.charCodeAt(i)) >>> 0;
+    return dailyPool[h % dailyPool.length];
+  }
+
+  function isoDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // Возвращает id цели, если засчитана именно сейчас. Вызывается из updateCounter;
+  // повторные вызовы в тот же день безопасны — guard по lastDaily.
+  function updateDaily() {
+    const today = isoDate(new Date());
+    const target = dailyTarget(today);
+    const chip = $('dailyChip');
+    const done = discovered.has(target);
+    let awarded = null;
+    if (done && state.lastDaily !== today) {
+      const yesterday = isoDate(new Date(Date.now() - 86400000));
+      state.dailyStreak = state.lastDaily === yesterday ? state.dailyStreak + 1 : 1;
+      state.lastDaily = today;
+      persist();
+      awarded = target;
+    }
+    const label = `${getMeta(target).icon} ${getName(target, getLang())}`;
+    chip.textContent = done ? t('dailyDone', { n: state.dailyStreak }) : t('dailyTarget', { target: label });
+    chip.dataset.done = done ? '1' : '0';
+    chip.title = t(done ? 'dailyTip' : 'dailyInfo', { n: state.dailyStreak, target: label });
+    return awarded;
+  }
+
+  $('dailyChip').addEventListener('click', () => {
+    const today = isoDate(new Date());
+    const target = dailyTarget(today);
+    const done = discovered.has(target);
+    toast(t(done ? 'dailyTip' : 'dailyInfo', { n: state.dailyStreak, target: `${getMeta(target).icon} ${getName(target, getLang())}` }), 'hint', 4500);
+  });
+
   function updateCounter() {
     counterEl.textContent = `${discovered.size} / ${book.total}`;
     progressFill.style.width = `${(discovered.size / book.total) * 100}%`;
     paletteCount.textContent = `${discovered.size}`;
     $('eraChip').textContent = t(`era${eraIndex()}`);
     $('rankChip').textContent = t(`rank${rankIndexFor(discovered.size)}`);
+    updateDaily();
   }
 
   /* ---------- палитра ---------- */
@@ -208,6 +255,7 @@ async function boot() {
     const prevRank = rankIndexFor(discovered.size);
     discovered.add(id);
     fresh.add(id);
+    const dailyAward = updateDaily();
     updateCounter();
     renderPalette();
     persist();
@@ -256,6 +304,11 @@ async function boot() {
     // Повышение ранга алхимика.
     if (n < book.total && rankIndexFor(n) > prevRank) {
       toast(t('rankUp', { rank: t(`rank${rankIndexFor(n)}`) }), 'milestone', 6000);
+      sound.milestone();
+    }
+    // Цель дня открыта крафтом — фанфара поверх остальных поздравлений.
+    if (dailyAward) {
+      toast(t('dailyUp', { n: state.dailyStreak }), 'milestone', 5000);
       sound.milestone();
     }
     checkAchievements();
@@ -587,6 +640,8 @@ async function boot() {
     fresh.clear();
     state.fresh = [];
     if (Number.isFinite(data.crafts)) state.crafts = Math.max(0, Math.floor(data.crafts));
+    if (typeof data.lastDaily === 'string') state.lastDaily = data.lastDaily;
+    if (Number.isFinite(data.dailyStreak)) state.dailyStreak = Math.max(0, Math.floor(data.dailyStreak));
     field.clear();
     field.restore(Array.isArray(data.tiles)
       ? data.tiles.filter((tl) => tl && typeof tl.el === 'string' && book.elements.has(tl.el))
