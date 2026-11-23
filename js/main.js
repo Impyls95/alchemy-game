@@ -37,6 +37,9 @@ async function boot() {
   let fieldVersion = 0;
   let undoToast = null;
   let undoSnapshot = null;
+  // Поле раскладывается после первого кадра; до этого serialize() вернул бы пустоту,
+  // а сохранение затёрло бы загруженную раскладку (видимая вкладка открывается позже).
+  let fieldLaidOut = false;
 
   function onFieldChange() {
     fieldVersion++;
@@ -56,8 +59,15 @@ async function boot() {
   function persist() {
     state.discovered = [...discovered];
     state.fresh = [...fresh];
-    state.tiles = field.serialize();
+    if (fieldLaidOut) state.tiles = field.serialize();
     save(state);
+  }
+
+  function persistNow() {
+    state.discovered = [...discovered];
+    state.fresh = [...fresh];
+    if (fieldLaidOut) state.tiles = field.serialize();
+    saveNow(state);
   }
 
   /* ---------- тосты ---------- */
@@ -950,7 +960,6 @@ async function boot() {
   spawnMotes();
 
   // Раскладка поля после первого кадра; в фоновой вкладке rAF стоит — подстраховка таймером.
-  let fieldLaidOut = false;
   function layoutField() {
     if (fieldLaidOut) return;
     fieldLaidOut = true;
@@ -969,15 +978,11 @@ async function boot() {
 
   window.addEventListener('resize', () => field.clampAll());
   window.addEventListener('beforeunload', () => {
-    state.tiles = field.serialize();
-    state.discovered = [...discovered];
-    state.fresh = [...fresh];
-    saveNow(state);
+    persistNow();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-      state.tiles = field.serialize();
-      saveNow(state);
+      persistNow();
       platform.gameplayStop();
     } else {
       platform.gameplayStart();
