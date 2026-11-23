@@ -24,7 +24,7 @@ export class RecipeBook {
         continue;
       }
       this.map.set(key, r.result);
-      this.recipes.push({ a: r.a, b: r.b, result: r.result });
+      this.recipes.push({ a: r.a, b: r.b, result: r.result, secret: !!r.secret });
       this.elements.add(r.a);
       this.elements.add(r.b);
       this.elements.add(r.result);
@@ -58,9 +58,10 @@ export class RecipeBook {
   }
 
   // Подсказка: рецепт, где оба ингредиента уже открыты, а результат — ещё нет.
+  // Секретные рецепты не выдаются — их находят только экспериментом.
   hint(discoveredSet) {
     const candidates = this.recipes.filter(
-      (r) => discoveredSet.has(r.a) && discoveredSet.has(r.b) && !discoveredSet.has(r.result)
+      (r) => !r.secret && discoveredSet.has(r.a) && discoveredSet.has(r.b) && !discoveredSet.has(r.result)
     );
     if (!candidates.length) return null;
     return candidates[Math.floor(Math.random() * candidates.length)];

@@ -139,7 +139,13 @@ export const ELEMENTS = {
   'Спутник':      { en: 'Satellite',    icon: '🛰️' },
   'Марс':         { en: 'Mars',         icon: '🔴' },
   'НЛО':          { en: 'UFO',          icon: '🛸' },
-  'Созвездие':    { en: 'Constellation', icon: '🗺️' }
+  'Созвездие':    { en: 'Constellation', icon: '🗺️' },
+
+  // Секретные элементы: их рецепты не показаны в книге и не выдаются подсказками.
+  'Похищенная корова': { en: 'Abducted cow', icon: '🐮', secret: true },
+  'Вымирание':         { en: 'Extinction',   icon: '🦕', secret: true },
+  'Вирус':             { en: 'Virus',        icon: '👾', secret: true },
+  'Луна из сыра':      { en: 'Cheese moon',  icon: '🥮', secret: true }
 };
 
 const FALLBACK = { en: null, icon: '✨' };

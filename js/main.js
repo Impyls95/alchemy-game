@@ -211,9 +211,16 @@ async function boot() {
     updateCounter();
     renderPalette();
     persist();
-    sound.discover();
+    const meta = getMeta(id);
+    if (meta.secret) {
+      // Пасхалка: особый тост и фанфара вместо обычного звука открытия.
+      toast(t('secretFound', { name: getName(id, getLang()) }), 'milestone', 6000);
+      sound.milestone();
+    } else {
+      sound.discover();
+    }
 
-    $('discoveryIcon').textContent = getMeta(id).icon;
+    $('discoveryIcon').textContent = meta.icon;
     $('discoveryName').textContent = getName(id, getLang());
     const banner = $('discovery');
     banner.hidden = false;
@@ -614,6 +621,7 @@ async function boot() {
     const lang = getLang();
     const rows = [];
     for (const r of book.recipes) {
+      if (r.secret) continue; // пасхалки не светятся в книге даже после открытия
       if (!(discovered.has(r.a) && discovered.has(r.b) && discovered.has(r.result))) continue;
       const na = getName(r.a, lang);
       const nb = getName(r.b, lang);
