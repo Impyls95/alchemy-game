@@ -79,6 +79,8 @@ export class Field {
     this.hooks = hooks;
     this.tiles = new Map(); // uid -> { uid, el, x, y, node }
     this.drag = null;
+    this.selectedUid = null; // плитка, выделенная тапом (тап-мердж)
+    this.lastPointerType = 'mouse'; // dblclick-удаление — только для мыши, чтобы не мешать тап-мерджу
     this.raf = 0;
     this.uidSeq = 0;
 
@@ -89,7 +91,7 @@ export class Field {
     this.root.addEventListener('pointercancel', (e) => this.onPointerCancel(e));
     this.root.addEventListener('dblclick', (e) => {
       const node = e.target.closest('.tile');
-      if (node && !this.drag) this.remove(node.dataset.uid, true);
+      if (node && !this.drag && this.lastPointerType === 'mouse') this.remove(node.dataset.uid, true);
     });
     this.root.addEventListener('contextmenu', (e) => {
       if (e.target.closest('.tile')) e.preventDefault();
@@ -148,6 +150,7 @@ export class Field {
   remove(uid, withSound = false) {
     const tile = this.tiles.get(uid);
     if (!tile) return;
+    if (this.selectedUid === uid) this.selectedUid = null;
     this.tiles.delete(uid);
     tile.node.classList.add('vanish');
     tile.node.addEventListener('animationend', () => tile.node.remove(), { once: true });
@@ -205,11 +208,18 @@ export class Field {
   /* ---------- drag & drop ---------- */
 
   onPointerDown(e) {
+    this.lastPointerType = e.pointerType || 'mouse';
     if (this.drag) return;
     const node = e.target.closest('.tile');
-    if (!node || e.button > 0) return;
+    if (!node || e.button > 0) {
+      this.deselect(); // тап по пустому полю снимает выделение
+      return;
+    }
     const tile = this.tiles.get(node.dataset.uid);
-    if (!tile) return;
+    if (!tile) {
+      this.deselect();
+      return;
+    }
     e.preventDefault();
     try { node.setPointerCapture(e.pointerId); } catch { /* синтетический/уже отпущенный pointer */ }
     const rect = this.root.getBoundingClientRect();
@@ -305,6 +315,11 @@ export class Field {
       this.tryMerge(d.uid, d.targetUid, d);
       return;
     }
+    if (!d.moved) {
+      this.handleTap(tile); // тап без движения: выделение или тап-мердж
+      return;
+    }
+    this.deselect(); // перетащили плитку без слияния — жест drag сбрасывает выделение
     this.hooks.onChange(); // просто переставили плитку
   }
 
@@ -314,11 +329,41 @@ export class Field {
     if (this.raf) { cancelAnimationFrame(this.raf); this.raf = 0; }
     this.drag = null;
     this.hooks.paletteEl?.classList.remove('drop-remove');
+    this.deselect();
     const tile = this.tiles.get(d.uid);
     if (!tile) return;
     tile.node.classList.remove('dragging');
     if (d.targetUid) this.tiles.get(d.targetUid)?.node.classList.remove('merge-target');
     this.returnTo(tile, d.originX, d.originY);
+  }
+
+  /* ---------- тап-мердж: тап выделяет плитку, тап по второй смешивает ---------- */
+
+  handleTap(tile) {
+    if (this.selectedUid === tile.uid) {
+      this.deselect();
+      return;
+    }
+    const selected = this.selectedUid && this.tiles.get(this.selectedUid);
+    if (selected) {
+      // Попытка слияния двумя тапами; при неудаче выделение остаётся — можно выбрать другого партнёра.
+      this.tryMerge(this.selectedUid, tile.uid, { originX: selected.x, originY: selected.y });
+      return;
+    }
+    this.select(tile.uid);
+  }
+
+  select(uid) {
+    this.deselect();
+    this.selectedUid = uid;
+    this.tiles.get(uid)?.node.classList.add('selected');
+    this.hooks.sound?.pickup();
+  }
+
+  deselect() {
+    if (!this.selectedUid) return;
+    this.tiles.get(this.selectedUid)?.node.classList.remove('selected');
+    this.selectedUid = null;
   }
 
   returnTo(tile, x, y) {

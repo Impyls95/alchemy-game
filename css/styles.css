@@ -426,6 +426,19 @@ body {
   animation: target-pulse .8s ease-in-out infinite;
 }
 
+/* выделенная тапом плитка — ждёт партнёра для слияния */
+.tile.selected {
+  z-index: 40;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px hsla(var(--hue-gold), 95%, 60%, .45), 0 6px 16px rgba(0, 0, 0, .3), 0 0 22px hsla(var(--hue-gold), 95%, 60%, .45);
+  animation: selected-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes selected-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px hsla(var(--hue-gold), 95%, 60%, .45), 0 6px 16px rgba(0, 0, 0, .3), 0 0 22px hsla(var(--hue-gold), 95%, 60%, .45); }
+  50% { box-shadow: 0 0 0 4px hsla(var(--hue-gold), 95%, 60%, .7), 0 6px 16px rgba(0, 0, 0, .3), 0 0 34px hsla(var(--hue-gold), 95%, 60%, .7); }
+}
+
 @keyframes target-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.07); }
@@ -868,7 +881,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .bg-aurora, .brand-glyph, .field-rune, .palette-item.is-new,
-  .mote, .sigil, .tile::before, .tile-icon { animation: none; }
+  .mote, .sigil, .tile::before, .tile-icon, .tile.selected { animation: none; }
   .mote { opacity: .25; }
 }
 
