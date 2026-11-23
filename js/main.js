@@ -1,5 +1,6 @@
 // Точка входа: состояние, палитра, шапка, модалки, подсказки, сохранение.
-import { load, save, saveNow, clear as clearStorage } from './storage.js';
+import { load, save, saveNow, clear as clearStorage, setBackend, localBackend } from './storage.js';
+import { initPlatform, platform } from './platform.js';
 import { loadRecipes } from './recipes.js';
 import { setLang, getLang, t } from './i18n.js';
 import { getMeta, getName } from './elements.js';
@@ -10,7 +11,9 @@ const HINT_COOLDOWN_MS = 45_000;
 
 async function boot() {
   const book = await loadRecipes();
-  const state = load();
+  await initPlatform();
+  setBackend(platform.backend ?? localBackend);
+  const state = await load();
   const sound = new Sound(state.settings.sound);
 
   // Базовые элементы всегда открыты.
@@ -354,6 +357,8 @@ async function boot() {
   setInterval(refreshHintButton, 1000);
 
   /* ---------- шаринг прогресса ---------- */
+  // На платформах с запретом внешних ссылок (Яндекс Игры) кнопка скрыта.
+  if (!platform.shareAllowed) $('btnShare').hidden = true;
   $('btnShare').addEventListener('click', async () => {
     const recent = [...discovered].slice(-3).reverse()
       .map((id) => `${getMeta(id).icon} ${getName(id, getLang())}`)
@@ -644,8 +649,13 @@ async function boot() {
     if (document.visibilityState === 'hidden') {
       state.tiles = field.serialize();
       saveNow(state);
+      platform.gameplayStop();
+    } else {
+      platform.gameplayStart();
     }
   });
+
+  platform.signalReady(); // SDK Яндекса: игра загрузилась и готова к взаимодействию
 }
 
 boot().catch((err) => {
