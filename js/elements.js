@@ -121,7 +121,25 @@ export const ELEMENTS = {
   'Болезнь':      { en: 'Sickness',     icon: '🤒' },
   'Лекарство':    { en: 'Medicine',     icon: '💊' },
   'Программист':  { en: 'Programmer',   icon: '🧑‍💻' },
-  'Сёрфер':       { en: 'Surfer',       icon: '🏄' }
+  'Сёрфер':       { en: 'Surfer',       icon: '🏄' },
+
+  'Туманность':   { en: 'Nebula',       icon: '🧿' },
+  'Планета':      { en: 'Planet',       icon: '🪐' },
+  'Галактика':    { en: 'Galaxy',       icon: '💫' },
+  'Вселенная':    { en: 'Universe',     icon: '♾️' },
+  'Комета':       { en: 'Comet',        icon: '🌠' },
+  'Звездопад':    { en: 'Meteor shower',icon: '🌟' },
+  'Кратер':       { en: 'Crater',       icon: '🕳️' },
+  'Сверхновая':   { en: 'Supernova',    icon: '💥' },
+  'Чёрная дыра':  { en: 'Black hole',   icon: '⚫' },
+  'Солнечный ветер': { en: 'Solar wind', icon: '🌞' },
+  'Северное сияние': { en: 'Aurora',    icon: '🎆' },
+  'Ракета':       { en: 'Rocket',       icon: '🚀' },
+  'Космонавт':    { en: 'Astronaut',    icon: '🧑‍🚀' },
+  'Спутник':      { en: 'Satellite',    icon: '🛰️' },
+  'Марс':         { en: 'Mars',         icon: '🔴' },
+  'НЛО':          { en: 'UFO',          icon: '🛸' },
+  'Созвездие':    { en: 'Constellation', icon: '🗺️' }
 };
 
 const FALLBACK = { en: null, icon: '✨' };

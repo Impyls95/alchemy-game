@@ -716,6 +716,12 @@ body {
 
 .toast.hint { border-color: hsla(var(--hue-gold), 90%, 60%, .6); color: var(--gold); }
 .toast.error { border-color: var(--danger); color: var(--danger); }
+.toast.milestone {
+  border-color: hsla(var(--hue-gold), 90%, 60%, .8);
+  color: var(--gold);
+  font-size: 14.5px;
+  box-shadow: 0 0 24px hsla(var(--hue-gold), 90%, 60%, .25), var(--shadow);
+}
 
 @keyframes toast-in { from { transform: translateY(16px); opacity: 0; } }
 @keyframes toast-out { to { transform: translateY(10px); opacity: 0; } }

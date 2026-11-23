@@ -57,6 +57,13 @@ export class Sound {
     this.tone(784, 0.22, { delay: 0.2, gain: 0.13 });
     this.tone(1047, 0.3, { delay: 0.3, gain: 0.1 });
   }
+  milestone() {
+    this.tone(392, 0.1, { type: 'triangle', gain: 0.08 });
+    this.tone(523, 0.1, { type: 'triangle', delay: 0.09, gain: 0.09 });
+    this.tone(659, 0.1, { type: 'triangle', delay: 0.18, gain: 0.1 });
+    this.tone(784, 0.14, { type: 'triangle', delay: 0.27, gain: 0.11 });
+    this.tone(1047, 0.4, { type: 'triangle', delay: 0.36, gain: 0.12 });
+  }
 }
 
 /* ---------- игровое поле ---------- */

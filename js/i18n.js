@@ -20,7 +20,7 @@ const STRINGS = {
     fieldEmpty: 'Перетащи элементы из палитры сюда',
     dropToRemove: 'Отпусти, чтобы убрать с поля',
     welcomeTitle: 'Добро пожаловать в Алхимию!',
-    welcomeText: 'Перетащи один элемент на другой, чтобы создать новый. Начни с четырёх стихий и энергии — и открой весь мир: от пара и лавы до жизни, городов и интернета.',
+    welcomeText: 'Перетащи один элемент на другой, чтобы создать новый. Начни с четырёх стихий и энергии — и открой весь мир: от пара и лавы до жизни, городов и космических ракет.',
     welcomeStep1: 'Бери элементы из палитры и перетаскивай на поле',
     welcomeStep2: 'Соединяй плитки друг с другом — удачная пара создаёт новый элемент',
     welcomeStep3: 'Прогресс сохраняется автоматически. Удачи, алхимик!',
@@ -59,7 +59,13 @@ const STRINGS = {
     sortNew: 'новые',
     sortAz: 'А-Я',
     era0: 'Стихии', era1: 'Природа', era2: 'Жизнь', era3: 'Цивилизация', era4: 'Космос',
-    milestone: 'Веха: {n} элементов открыто!'
+    milestone: 'Веха: {n} элементов открыто!',
+    milestone10: '🎉 Первая веха: {n} элементов открыто!',
+    milestone25: '🎉 Веха: {n} элементов! Ты разгадываешь мир',
+    milestone50: '🎉 Веха: {n} элементов! Впечатляющий путь алхимика',
+    milestone75: '🎉 Веха: {n} элементов! До космоса уже недалеко',
+    milestone100: '🎉 Веха: {n} элементов! Ты — легенда алхимии',
+    eraUp: '🌟 Новая эра: {era}!'
   },
   en: {
     title: 'Alchemy',
@@ -81,7 +87,7 @@ const STRINGS = {
     fieldEmpty: 'Drag elements from the palette here',
     dropToRemove: 'Release to remove from field',
     welcomeTitle: 'Welcome to Alchemy!',
-    welcomeText: 'Drag one element onto another to create something new. Start with the four classical elements plus energy — and discover a whole world, from steam and lava to life, cities and the internet.',
+    welcomeText: 'Drag one element onto another to create something new. Start with the four classical elements plus energy — and discover a whole world, from steam and lava to life, cities and space rockets.',
     welcomeStep1: 'Take elements from the palette and drag them onto the field',
     welcomeStep2: 'Drop tiles onto each other — a valid pair creates a new element',
     welcomeStep3: 'Progress is saved automatically. Good luck, alchemist!',
@@ -120,7 +126,13 @@ const STRINGS = {
     sortNew: 'newest',
     sortAz: 'A-Z',
     era0: 'Elements', era1: 'Nature', era2: 'Life', era3: 'Civilization', era4: 'Cosmos',
-    milestone: 'Milestone: {n} elements discovered!'
+    milestone: 'Milestone: {n} elements discovered!',
+    milestone10: '🎉 First milestone: {n} elements discovered!',
+    milestone25: '🎉 Milestone: {n} elements! You are cracking the world open',
+    milestone50: '🎉 Milestone: {n} elements! An impressive alchemist path',
+    milestone75: '🎉 Milestone: {n} elements! Cosmos is getting closer',
+    milestone100: '🎉 Milestone: {n} elements! You are an alchemy legend',
+    eraUp: '🌟 New era: {era}!'
   }
 };
 

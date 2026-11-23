@@ -98,9 +98,13 @@ async function boot() {
   }
 
   /* ---------- счётчик и прогресс ---------- */
-  function eraIndex() {
-    const f = discovered.size / book.total;
+  function eraIndexFor(n) {
+    const f = n / book.total;
     return f >= 0.9 ? 4 : f >= 0.65 ? 3 : f >= 0.4 ? 2 : f >= 0.15 ? 1 : 0;
+  }
+
+  function eraIndex() {
+    return eraIndexFor(discovered.size);
   }
 
   function updateCounter() {
@@ -161,9 +165,11 @@ async function boot() {
   }
 
   /* ---------- открытие нового элемента ---------- */
+  const BIG_MILESTONES = new Set([10, 25, 50, 75, 100]);
   let discoveryTimer = null;
   function handleDiscover(id) {
     if (discovered.has(id)) return;
+    const prevEra = eraIndexFor(discovered.size);
     discovered.add(id);
     fresh.add(id);
     updateCounter();
@@ -185,12 +191,25 @@ async function boot() {
     // Под-scroll палитры к новинке, чтобы бейдж NEW был виден.
     paletteGrid.querySelector(`[data-el="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-    // Веха прогресса: каждые 10 открытий — праздничный всплеск в центре поля.
-    if (discovered.size % 10 === 0 && discovered.size < book.total) {
-      toast(t('milestone', { n: discovered.size }), 'hint', 4000);
-      field.burst(fieldEl.clientWidth / 2, fieldEl.clientHeight / 2);
+    // Вехи: каждые 10 открытий — всплеск в центре поля, ключевые 10/25/50/75/100 — фанфары.
+    const n = discovered.size;
+    const cx = fieldEl.clientWidth / 2;
+    const cy = fieldEl.clientHeight / 2;
+    if (n === book.total) {
+      toast(t('allDone'), 'hint', 6000);
+      field.burst(cx, cy);
+    } else if (BIG_MILESTONES.has(n)) {
+      toast(t(`milestone${n}`, { n }), 'milestone', 6000);
+      sound.milestone();
+      field.burst(cx, cy);
+    } else if (n % 10 === 0) {
+      toast(t('milestone', { n }), 'hint', 4000);
+      field.burst(cx, cy);
     }
-    if (discovered.size === book.total) toast(t('allDone'), 'hint', 6000);
+    // Пересечение порога эры — отдельное поздравление с новой эрой.
+    if (n < book.total && eraIndexFor(n) > prevEra) {
+      toast(t('eraUp', { era: t(`era${eraIndexFor(n)}`) }), 'milestone', 6000);
+    }
   }
 
   /* ---------- undo последнего слияния ---------- */
