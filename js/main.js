@@ -481,6 +481,25 @@ async function boot() {
   setInterval(refreshHintButton, 1000);
 
   /* ---------- шаринг прогресса ---------- */
+  // Копирование в буфер: Clipboard API требует защищённого контекста и фокуса,
+  // поэтому при отказе пробуем legacy execCommand (работает и по file://).
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch { /* неsecure-контекст, нет фокуса или разрешения — legacy-путь */ }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.append(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { /* нет поддержки */ }
+    ta.remove();
+    return ok;
+  }
+
   // На платформах с запретом внешних ссылок (Яндекс Игры) кнопка скрыта.
   if (!platform.shareAllowed) $('btnShare').hidden = true;
   $('btnShare').addEventListener('click', async () => {
@@ -494,17 +513,23 @@ async function boot() {
       recent,
       url: location.origin + location.pathname
     });
-    try {
-      if (navigator.share) {
+    // На телефоне удобно нативное меню «Поделиться»; на десктопе оно часто
+    // пустое и выглядело как «кнопка не работает» — там сразу копируем в буфер.
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      try {
         await navigator.share({ title: t('title'), text });
         return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return; // пользователь закрыл системный диалог
+        // системный диалог недоступен — копируем в буфер ниже
       }
-      await navigator.clipboard.writeText(text);
-      toast(t('shareCopied'), 'hint', 2500);
-    } catch (err) {
-      if (err?.name === 'AbortError') return; // пользователь отменил системный диалог
-      toast(text, '', 6000);
     }
+    if (await copyText(text)) {
+      toast(t('shareCopied'), 'hint', 2500);
+      return;
+    }
+    // Скопировать не удалось вообще — показываем текст, чтобы можно было списать.
+    toast(text, '', 6000);
   });
 
   /* ---------- сортировка палитры ---------- */
@@ -611,14 +636,13 @@ async function boot() {
   $('btnExportSave').addEventListener('click', async () => {
     const code = encodeSave(state);
     saveCodeEl.value = code;
-    try {
-      await navigator.clipboard.writeText(code);
+    if (await copyText(code)) {
       toast(t('shareCopied'), 'hint', 2500);
-    } catch {
-      // Буфер недоступен — код остаётся в поле, выделяем для ручного копирования.
-      saveCodeEl.focus();
-      saveCodeEl.select();
+      return;
     }
+    // Буфер недоступен — код остаётся в поле, выделяем для ручного копирования.
+    saveCodeEl.focus();
+    saveCodeEl.select();
   });
 
   $('btnImportSave').addEventListener('click', () => {
