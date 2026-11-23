@@ -279,6 +279,9 @@ async function boot() {
      Условия вычисляются на лету из состояния; achSeen гасит повторные
      поздравления в текущей сессии (в т.ч. при загрузке со старым прогрессом). */
   const FOOD = ['Хлеб', 'Суши', 'Сыр', 'Мёд', 'Яичница', 'Молоко', 'Пшеница', 'Рис'];
+  const MYTH = ['Легенда', 'Магия', 'Зелье', 'Призрак', 'Лампа', 'Джинн', 'Ведьма', 'Дракон', 'Русалка', 'Единорог', 'Рыцарь', 'Замок', 'Принцесса'];
+  const MUSIC = ['Звук', 'Барабан', 'Гитара', 'Пианино', 'Колокол', 'Наушники', 'Рок', 'Оркестр', 'Дискотека'];
+  const LEGENDS = ['Философский камень', 'Эликсир жизни', 'Перо Феникса'];
   const ACHIEVEMENTS = [
     { icon: '🧪', key: 'ach1', check: () => (state.crafts ?? 0) >= 1 },
     { icon: '⚗️', key: 'ach2', check: () => discovered.has('Феникс') },
@@ -287,7 +290,10 @@ async function boot() {
     { icon: '🧑‍🍳', key: 'ach5', check: () => FOOD.filter((el) => discovered.has(el)).length >= 5 },
     { icon: '🔭', key: 'ach6', check: () => ['Телескоп', 'Галактика', 'Созвездие'].every((el) => discovered.has(el)) },
     { icon: '💡', key: 'ach7', check: () => (state.crafts ?? 0) >= 25 },
-    { icon: '🏆', key: 'ach8', check: () => discovered.size === book.total }
+    { icon: '🏆', key: 'ach8', check: () => discovered.size === book.total },
+    { icon: '🐉', key: 'ach9', check: () => MYTH.every((el) => discovered.has(el)) },
+    { icon: '🎸', key: 'ach10', check: () => MUSIC.every((el) => discovered.has(el)) },
+    { icon: '🌟', key: 'ach11', check: () => LEGENDS.every((el) => discovered.has(el)) }
   ];
   const achSeen = new Set(ACHIEVEMENTS.filter((a) => a.check()).map((a) => a.key));
 
