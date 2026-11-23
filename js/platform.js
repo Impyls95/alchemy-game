@@ -5,6 +5,9 @@
 // Пикабу Игры: игра остаётся на нашем хостинге, SDK подгружается с games.pikabu.ru,
 // облачные сохранения через sdk.storage, готовность — sdk.gameStarted().
 // Проверка ветки: ?mockpksdk=1.
+// VK Мини Игры: игра остаётся на нашем хостинге, VK Bridge вендорится локально
+// (js/vendor/vk-bridge.min.js), сохранения через VKWebAppStorage с шардированием
+// (см. vkBackend), язык из vk_language. Проверка ветки: ?mockvk=1.
 import { localBackend, normalize } from './storage.js';
 
 const KEY = 'alchemy.save.v1';
@@ -21,6 +24,20 @@ function looksLikePikabu() {
     const ao = location.ancestorOrigins;
     for (let i = 0; ao && i < ao.length; i++) {
       if (/pikabu\.ru/.test(ao.item(i))) return true;
+    }
+  } catch { /* ок */ }
+  return false;
+}
+
+// VK встраивает игру в iframe и добавляет в URL параметры vk_app_id/vk_user_id —
+// наш origin при этом не меняется, поэтому ориентируемся на окружение.
+function looksLikeVK() {
+  try {
+    if (/[?&]vk_(app_id|user_id)=/.test(location.search)) return true;
+    if (/(^|\.)vk\.(com|ru)$/.test(new URL(document.referrer).hostname)) return true;
+    const ao = location.ancestorOrigins;
+    for (let i = 0; ao && i < ao.length; i++) {
+      if (/(^|\.)vk\.(com|ru)$/.test(ao.item(i))) return true;
     }
   } catch { /* ок */ }
   return false;
@@ -82,6 +99,39 @@ function makeMockPkbSdk() {
       flush: async () => ({ ok: true })
     },
     gameStarted: () => console.info('[alchemy] mock: gameStarted()')
+  };
+}
+
+// Мок VK Bridge: send('VKWebApp*') поверх localStorage.
+function makeMockVKBridge() {
+  const SKEY = 'alchemy.mockvkbridge.storage';
+  const read = () => { try { return JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch { return {}; } };
+  const write = (obj) => { try { localStorage.setItem(SKEY, JSON.stringify(obj)); } catch { /* ок */ } };
+  console.info('[alchemy] mock VK Bridge');
+  return {
+    supports: (method) => method.startsWith('VKWebApp'),
+    send: async (method, params = {}) => {
+      switch (method) {
+        case 'VKWebAppInit':
+          return {};
+        case 'VKWebAppStorageSet': {
+          const o = read();
+          o[params.key] = params.value;
+          write(o);
+          return { result: true };
+        }
+        case 'VKWebAppStorageGet':
+          return { keys: params.keys.map((k) => ({ key: k, value: read()[k] ?? '' })) };
+        case 'VKWebAppStorageGetKeys': {
+          const keys = Object.keys(read());
+          const count = params.count ?? 100;
+          const offset = params.offset ?? 0;
+          return { keys: keys.slice(offset, offset + count) };
+        }
+        default:
+          throw new Error(`mock VK Bridge: ${method} не поддерживается`);
+      }
+    }
   };
 }
 
@@ -217,11 +267,116 @@ function pikabuBackend(sdk) {
   };
 }
 
+// Облачные сохранения VK через VKWebAppStorage (значения — только строки).
+// Документация обещает 4096 байт на значение, но клиенты усекали длинные строки
+// (VKCOM/vk-bridge#226) — сейв режется на куски по 2000 UTF-8 байт: мета-ключ
+// с числом кусков + c0…c7 (до 16 КБ). localStorage остаётся зеркалом: если
+// облако недоступно, игра читает локальную копию.
+function vkBackend(bridge) {
+  const META = 'alchemy_save_v1_m';
+  const chunkKey = (i) => `alchemy_save_v1_c${i}`;
+  const MAX_CHUNKS = 8;
+  const CHUNK_BYTES = 2000;
+  let timer = null;
+  let pending = null;
+  let lastChunks = 0;
+  const mirror = (state) => {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* сторонний iframe — ок */ }
+  };
+  // Нарезка по символам с учётом размера UTF-8: граница куска не может попасть
+  // внутрь двухбайтовой кириллической буквы.
+  const utf8Len = (ch) => {
+    const c = ch.codePointAt(0);
+    return c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
+  };
+  const splitChunks = (json) => {
+    const chunks = [];
+    let cur = '';
+    let size = 0;
+    for (const ch of json) {
+      const l = utf8Len(ch);
+      if (size + l > CHUNK_BYTES) {
+        chunks.push(cur);
+        cur = '';
+        size = 0;
+      }
+      cur += ch;
+      size += l;
+    }
+    if (cur) chunks.push(cur);
+    return chunks;
+  };
+  const set = (key, value) => bridge.send('VKWebAppStorageSet', { key, value });
+  const push = async (state) => {
+    mirror(state);
+    try {
+      const chunks = splitChunks(JSON.stringify(state));
+      if (chunks.length > MAX_CHUNKS) {
+        console.warn(`[alchemy] Сейв не помещается в облако VK (${chunks.length} кусков), остался в локальной копии`);
+        return;
+      }
+      const jobs = [set(META, JSON.stringify({ v: 1, chunks: chunks.length }))];
+      chunks.forEach((c, i) => jobs.push(set(chunkKey(i), c)));
+      for (let i = chunks.length; i < lastChunks; i++) jobs.push(set(chunkKey(i), ''));
+      lastChunks = chunks.length;
+      await Promise.allSettled(jobs);
+    } catch (err) {
+      console.warn('[alchemy] Прогресс не сохранён в облаке VK, остался в локальной копии:', err);
+    }
+  };
+  return {
+    async load() {
+      try {
+        const keys = [META];
+        for (let i = 0; i < MAX_CHUNKS; i++) keys.push(chunkKey(i));
+        const res = await bridge.send('VKWebAppStorageGet', { keys });
+        const map = {};
+        for (const { key, value } of res.keys) map[key] = value;
+        const meta = JSON.parse(map[META] || 'null');
+        if (!meta || !meta.chunks) {
+          // Новый игрок: стартовый язык — из окружения платформы.
+          return normalize(platform.lang ? { settings: { lang: platform.lang } } : {});
+        }
+        const parts = [];
+        for (let i = 0; i < meta.chunks; i++) {
+          if (!map[chunkKey(i)]) throw new Error(`кусок ${i} отсутствует`);
+          parts.push(map[chunkKey(i)]);
+        }
+        return normalize(JSON.parse(parts.join('')));
+      } catch (err) {
+        console.warn('[alchemy] Облако VK недоступно, читаю локальную копию:', err);
+        return localBackend.load();
+      }
+    },
+    save(state) {
+      pending = state;
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        push(pending);
+      }, 250);
+    },
+    saveNow(state) {
+      if (timer) { clearTimeout(timer); timer = null; }
+      push(state);
+    },
+    async clear() {
+      try { localStorage.removeItem(KEY); } catch { /* ок */ }
+      try {
+        const jobs = [set(META, JSON.stringify({ v: 1, chunks: 0 }))];
+        for (let i = 0; i < MAX_CHUNKS; i++) jobs.push(set(chunkKey(i), ''));
+        await Promise.allSettled(jobs);
+      } catch { /* ок */ }
+    }
+  };
+}
+
 export async function initPlatform() {
   const params = new URLSearchParams(location.search);
   const mockYandex = params.has('mockysdk');
   const mockPikabu = params.has('mockpksdk');
-  if (!mockYandex && !mockPikabu && !isYandexHost() && !looksLikePikabu()) return platform;
+  const mockVK = params.has('mockvk');
+  if (!mockYandex && !mockPikabu && !mockVK && !isYandexHost() && !looksLikePikabu() && !looksLikeVK()) return platform;
 
   try {
     if (mockYandex || isYandexHost()) {
@@ -236,7 +391,7 @@ export async function initPlatform() {
       platform.lang = ysdk?.environment?.i18n?.lang === 'ru' ? 'ru' : 'en';
       platform.shareAllowed = false;
       platform.backend = yandexBackend(ysdk);
-    } else {
+    } else if (mockPikabu || looksLikePikabu()) {
       if (mockPikabu) {
         window.PkbSDK ??= { init: async () => makeMockPkbSdk() };
       } else {
@@ -247,6 +402,19 @@ export async function initPlatform() {
       platform.pk = sdk;
       platform.shareAllowed = false;
       platform.backend = pikabuBackend(sdk);
+    } else {
+      if (mockVK) {
+        window.vkBridge ??= makeMockVKBridge();
+      } else {
+        await withTimeout(loadScript('js/vendor/vk-bridge.min.js'), 5000);
+        if (!window.vkBridge?.send) throw new Error('vkBridge недоступен');
+      }
+      await withTimeout(window.vkBridge.send('VKWebAppInit'), 5000);
+      const vkLang = (params.get('vk_language') || '').toLowerCase();
+      platform.name = 'vk';
+      platform.shareAllowed = false;
+      platform.lang = vkLang === 'ru' ? 'ru' : 'en';
+      platform.backend = vkBackend(window.vkBridge);
     }
   } catch (err) {
     console.warn('[alchemy] SDK платформы недоступен, работаем в веб-режиме:', err);
