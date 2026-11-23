@@ -141,6 +141,37 @@ export const ELEMENTS = {
   'НЛО':          { en: 'UFO',          icon: '🛸' },
   'Созвездие':    { en: 'Constellation', icon: '🗺️' },
 
+  // Мифология: от легенд — к магии, волшебным существам и рыцарским замкам.
+  'Легенда':      { en: 'Legend',       icon: '📜' },
+  'Магия':        { en: 'Magic',        icon: '🪄' },
+  'Зелье':        { en: 'Potion',       icon: '🧪' },
+  'Призрак':      { en: 'Ghost',        icon: '👻' },
+  'Лампа':        { en: 'Oil lamp',     icon: '🪔' },
+  'Джинн':        { en: 'Genie',        icon: '🧞' },
+  'Ведьма':       { en: 'Witch',        icon: '🧙‍♀️' },
+  'Дракон':       { en: 'Dragon',       icon: '🐉' },
+  'Русалка':      { en: 'Mermaid',      icon: '🧜‍♀️' },
+  'Единорог':     { en: 'Unicorn',      icon: '🦄' },
+  'Рыцарь':       { en: 'Knight',       icon: '⚔️' },
+  'Замок':        { en: 'Castle',       icon: '🏰' },
+  'Принцесса':    { en: 'Princess',     icon: '👸' },
+
+  // Музыка: от первого звука — к оркестру и дискотеке.
+  'Звук':         { en: 'Sound',        icon: '🔊' },
+  'Барабан':      { en: 'Drum',         icon: '🥁' },
+  'Гитара':       { en: 'Guitar',       icon: '🎸' },
+  'Пианино':      { en: 'Piano',        icon: '🎹' },
+  'Колокол':      { en: 'Bell',         icon: '🔔' },
+  'Наушники':     { en: 'Headphones',   icon: '🎧' },
+  'Рок':          { en: 'Rock',         icon: '🤘' },
+  'Оркестр':      { en: 'Orchestra',    icon: '🎼' },
+  'Дискотека':    { en: 'Disco',        icon: '🪩' },
+
+  // Легендарные: вершины длинных цепочек — с золотым оформлением и фанфарами.
+  'Философский камень': { en: "Philosopher's stone", icon: '💮', legendary: true },
+  'Эликсир жизни':      { en: 'Elixir of life',      icon: '⚗️', legendary: true },
+  'Перо Феникса':       { en: 'Phoenix feather',     icon: '🪶', legendary: true },
+
   // Секретные элементы: их рецепты не показаны в книге и не выдаются подсказками.
   'Похищенная корова': { en: 'Abducted cow', icon: '🐮', secret: true },
   'Вымирание':         { en: 'Extinction',   icon: '🦕', secret: true },

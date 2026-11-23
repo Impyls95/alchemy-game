@@ -159,6 +159,62 @@ async function boot() {
     toast(t(done ? 'dailyTip' : 'dailyInfo', { n: state.dailyStreak, target: `${getMeta(target).icon} ${getName(target, getLang())}` }), 'hint', 4500);
   });
 
+  /* ---------- задания дня ---------- */
+  // Цели одинаковы у всех игроков и выводятся из даты; счётчики — в сейве.
+  function questGoal(dateStr, kind) {
+    let h = 0;
+    const s = `${dateStr}|${kind}`;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return kind === 'discover' ? 2 + (h % 3) : 6 + (h % 4) * 3;
+  }
+
+  // Смена суток обнуляет счётчики заданий — тихо, как и цель дня.
+  function resetQuestsIfNeeded() {
+    const today = isoDate(new Date());
+    if (state.questsDate === today) return;
+    state.questsDate = today;
+    state.qDisc = 0;
+    state.qCrafts = 0;
+    persist();
+  }
+
+  function questDoneCount() {
+    const today = isoDate(new Date());
+    return (state.qDisc >= questGoal(today, 'discover') ? 1 : 0)
+      + (state.qCrafts >= questGoal(today, 'crafts') ? 1 : 0);
+  }
+
+  function updateQuests() {
+    resetQuestsIfNeeded();
+    const done = questDoneCount();
+    const chip = $('questChip');
+    chip.textContent = `🎯 ${done}/2`;
+    chip.dataset.done = done === 2 ? '1' : '0';
+    chip.title = t('questTitle');
+  }
+
+  // kind: 'discover' — открытие нового элемента, 'crafts' — любое успешное слияние.
+  function bumpQuest(kind) {
+    resetQuestsIfNeeded();
+    const today = isoDate(new Date());
+    const key = kind === 'discover' ? 'qDisc' : 'qCrafts';
+    state[key] += 1;
+    persist();
+    const justDone = state[key] === questGoal(today, kind);
+    updateQuests();
+    if (justDone) {
+      toast(t('questUp', { done: questDoneCount(), total: 2 }), 'hint', 4500);
+      sound.discover();
+    }
+  }
+
+  $('questChip').addEventListener('click', () => {
+    const today = isoDate(new Date());
+    const gd = questGoal(today, 'discover');
+    const gc = questGoal(today, 'crafts');
+    toast(`${t('questTitle')}\n${t('questDiscover', { n: gd })}: ${Math.min(state.qDisc, gd)}/${gd}\n${t('questCrafts', { n: gc })}: ${Math.min(state.qCrafts, gc)}/${gc}`, 'hint', 5000);
+  });
+
   function updateCounter() {
     counterEl.textContent = `${discovered.size} / ${book.total}`;
     progressFill.style.width = `${(discovered.size / book.total) * 100}%`;
@@ -166,6 +222,7 @@ async function boot() {
     $('eraChip').textContent = t(`era${eraIndex()}`);
     $('rankChip').textContent = t(`rank${rankIndexFor(discovered.size)}`);
     updateDaily();
+    updateQuests();
   }
 
   /* ---------- палитра ---------- */
@@ -257,10 +314,16 @@ async function boot() {
     fresh.add(id);
     const dailyAward = updateDaily();
     updateCounter();
+    bumpQuest('discover');
     renderPalette();
     persist();
     const meta = getMeta(id);
-    if (meta.secret) {
+    if (meta.legendary) {
+      // Легендарный элемент: золотое поздравление с искрами поверх поля.
+      toast(t('legendFound', { name: getName(id, getLang()) }), 'milestone', 7000);
+      sound.milestone();
+      field.burst(fieldEl.clientWidth / 2, fieldEl.clientHeight / 2);
+    } else if (meta.secret) {
       // Пасхалка: особый тост и фанфара вместо обычного звука открытия.
       toast(t('secretFound', { name: getName(id, getLang()) }), 'milestone', 6000);
       sound.milestone();
@@ -317,6 +380,7 @@ async function boot() {
   /* ---------- undo последнего слияния ---------- */
   function handleMerged(result, snapshot) {
     state.crafts = (state.crafts ?? 0) + 1;
+    bumpQuest('crafts');
     persist();
     checkAchievements();
     undoSnapshot = snapshot;
@@ -666,6 +730,9 @@ async function boot() {
     if (Number.isFinite(data.crafts)) state.crafts = Math.max(0, Math.floor(data.crafts));
     if (typeof data.lastDaily === 'string') state.lastDaily = data.lastDaily;
     if (Number.isFinite(data.dailyStreak)) state.dailyStreak = Math.max(0, Math.floor(data.dailyStreak));
+    if (typeof data.questsDate === 'string') state.questsDate = data.questsDate;
+    if (Number.isFinite(data.qDisc)) state.qDisc = Math.max(0, Math.floor(data.qDisc));
+    if (Number.isFinite(data.qCrafts)) state.qCrafts = Math.max(0, Math.floor(data.qCrafts));
     field.clear();
     field.restore(Array.isArray(data.tiles)
       ? data.tiles.filter((tl) => tl && typeof tl.el === 'string' && book.elements.has(tl.el))
@@ -713,6 +780,7 @@ async function boot() {
     for (const [r, na, nb, nr] of rows) {
       const row = document.createElement('div');
       row.className = 'book-row';
+      if (getMeta(r.result).legendary) row.classList.add('book-row-legendary');
       const part = (id, name, res = false) => {
         const ic = document.createElement('span');
         ic.className = 'b-ic';
@@ -809,6 +877,11 @@ async function boot() {
     state.fresh = [];
     state.hintAt = 0;
     state.crafts = 0;
+    state.lastDaily = '';
+    state.dailyStreak = 0;
+    state.questsDate = '';
+    state.qDisc = 0;
+    state.qCrafts = 0;
     state.welcomed = true;
     searchEl.value = '';
     resetModal.hidden = true;

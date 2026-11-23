@@ -311,18 +311,30 @@ body {
   transition: color .3s, border-color .3s, background .3s;
 }
 
-/* чип ежедневного вызова: кликабельный, зелёный когда день выполнен */
-.daily-chip {
+/* кликабельные чипы (рецепт дня, задания дня): зелёные когда всё выполнено */
+.chip-btn {
   cursor: pointer;
   text-transform: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.daily-chip[data-done="1"] {
+.chip-btn[data-done="1"] {
   border-color: hsla(var(--hue-fresh), 70%, 55%, .55);
   background: hsla(var(--hue-fresh), 70%, 50%, .14);
   color: var(--success);
+}
+
+/* легендарные элементы: золото вне зависимости от цвета ветки */
+.tile.legendary {
+  border-color: var(--gold);
+  background: linear-gradient(140deg, hsla(var(--hue-gold), 95%, 55%, .16), hsla(var(--hue-magenta), 80%, 55%, .08));
+  box-shadow: 0 0 18px hsla(var(--hue-gold), 90%, 60%, .4), var(--shadow);
+}
+
+.book-row-legendary {
+  border-color: hsla(var(--hue-gold), 90%, 60%, .55);
+  background: hsla(var(--hue-gold), 90%, 55%, .08);
 }
 
 .field-empty {
@@ -737,6 +749,7 @@ body {
   font-size: 13.5px;
   font-weight: 600;
   text-align: center;
+  white-space: pre-line;
   box-shadow: var(--shadow);
   animation: toast-in .3s var(--ease-pop), toast-out .3s ease-in forwards;
   animation-delay: 0s, var(--life, 3s);

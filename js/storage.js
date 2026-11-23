@@ -11,6 +11,9 @@ const DEFAULTS = () => ({
   crafts: 0,             // всего успешных смешиваний (для достижений)
   lastDaily: '',         // день (YYYY-MM-DD), когда последний раз засчитан рецепт дня
   dailyStreak: 0,        // серия дней с выполненным рецептом дня
+  questsDate: '',        // день (YYYY-MM-DD) текущих заданий
+  qDisc: 0,              // открыто новых элементов за день заданий
+  qCrafts: 0,            // смешиваний за день заданий
   welcomed: false
 });
 
@@ -26,6 +29,9 @@ export function normalize(data) {
     crafts: Number.isFinite(data.crafts) ? Math.max(0, Math.floor(data.crafts)) : 0,
     lastDaily: typeof data.lastDaily === 'string' ? data.lastDaily : '',
     dailyStreak: Number.isFinite(data.dailyStreak) ? Math.max(0, Math.floor(data.dailyStreak)) : 0,
+    questsDate: typeof data.questsDate === 'string' ? data.questsDate : '',
+    qDisc: Number.isFinite(data.qDisc) ? Math.max(0, Math.floor(data.qDisc)) : 0,
+    qCrafts: Number.isFinite(data.qCrafts) ? Math.max(0, Math.floor(data.qCrafts)) : 0,
     settings: { ...DEFAULTS().settings, ...(data.settings && typeof data.settings === 'object' ? data.settings : {}) }
   };
 }

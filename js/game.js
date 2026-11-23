@@ -115,6 +115,7 @@ export class Field {
   buildNode(elId) {
     const node = document.createElement('div');
     node.className = 'tile';
+    if (getMeta(elId).legendary) node.classList.add('legendary');
     node.style.setProperty('--h', hueFor(elId).toFixed(1));
     const sigil = document.createElement('span');
     sigil.className = 'sigil';
