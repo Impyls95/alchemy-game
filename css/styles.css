@@ -166,12 +166,30 @@ body {
   letter-spacing: .04em;
 }
 
-.progress { flex: 1 1 160px; max-width: 320px; min-width: 120px; }
+.progress {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
 
-.progress-label { font-size: 13px; color: var(--text-dim); margin-bottom: 5px; }
+.progress-label { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
 .progress-label strong { color: var(--gold); font-variant-numeric: tabular-nums; }
 
+/* чипы ранга/эры/дневных заданий: отдельная строка-контейнер, переносятся и не распирают шапку */
+.progress-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 6px;
+  min-width: 0;
+}
+
 .progress-track {
+  flex: 1 1 90px;
+  min-width: 90px;
   height: 8px;
   border-radius: 99px;
   background: var(--track);
@@ -294,10 +312,7 @@ body {
 
 /* чип текущей эры открытий */
 .era-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-left: 8px;
+  display: inline-block;
   padding: 2px 9px;
   border-radius: 99px;
   border: 1px solid hsla(var(--hue-teal), 70%, 55%, .45);
@@ -323,6 +338,17 @@ body {
   border-color: hsla(var(--hue-fresh), 70%, 55%, .55);
   background: hsla(var(--hue-fresh), 70%, 50%, .14);
   color: var(--success);
+}
+
+/* на широких экранах длинный чип (рецепт дня) подрезается с многоточием,
+   полный текст — в title и по тапу; на телефоне переносится целиком */
+@media (min-width: 821px) {
+  .era-chip {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* легендарные элементы: золото вне зависимости от цвета ветки */
@@ -891,9 +917,8 @@ body {
   .app-header { gap: 10px; padding: 8px 12px; flex-wrap: wrap; }
   .brand-glyph { font-size: 27px; }
   .brand-text h1 { font-size: 18px; }
-  .progress { order: 3; flex-basis: 100%; max-width: none; display: flex; align-items: center; gap: 10px; }
-  .progress-label { margin: 0; white-space: nowrap; font-size: 12px; }
-  .progress-track { flex: 1; }
+  .progress { order: 3; flex-basis: 100%; max-width: none; }
+  .progress-label { font-size: 12px; }
   .actions { gap: 6px; }
   .btn { padding: 8px 10px; }
   .btn-icon { padding: 8px 9px; font-size: 14px; }
